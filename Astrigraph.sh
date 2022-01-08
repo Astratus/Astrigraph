@@ -19,49 +19,54 @@ function add_extention_to_context {
   local ArrayIndexes
 
   # If the given context doesn't have any connections yet, add connection.
-  #echo "trying to add $Extention to $Context"
-  if [[ ! " ${linkcontextarray[*]} " =~ " ${Context} " ]]; then
-  #  echo "Context has no connections just adding it"
+  echo "trying to add $Extention to $Context"
+  if [[ ! *"${Context}"*  =~  " ${linkcontextarray[*]} " ]]; then
+    echo "Context has no connections just adding it"
     linkcontextarray+=("${Context}")
     linkextentionarray+=("${Extention}")
     echo "Adding Context to Extention Context: " ${linkcontextarray[-1]} " Extention: " ${linkextentionarray[-1]} " at index: " ${#linkcontextarray[@]}
   # Given context has atleast one connection already. Check if connection already exists.
   else
-    #echo "Context already has connections"
-    #echo "checking ${linkcontextarray[@]} for ${Context}"
+    echo "Context already has connections"
+    echo "checking ${linkcontextarray[@]} for ${Context}"
     # Get a list of array indexes where context already exists.
     for i in "${!linkcontextarray[@]}"; do
 
     #echo "Checking if ${linkcontextarray[${i}]} = ${Context}"
     # Where the given Context is already in the array add it's array index number to ArrayIndexes.
     if [[ ${linkcontextarray[${i}]} == ${Context} ]]; then
-      #echo "${linkcontextarray[${i}]} = ${Context} index is ${i}"
+      echo "${linkcontextarray[${i}]} = ${Context} index is ${i}"
       ArrayIndexes+=("${i}")
     fi
+
     done
 
-    #echo "${linkcontextarray[@]} contains ${Context} at all these indexes ${ArrayIndexes[@]}"
+    echo "${linkcontextarray[@]} contains ${Context} at all these indexes ${ArrayIndexes[@]}"
     # For each index number in ArrayIndexes
-    for x in "${!ArrayIndexes[@]}"
-    do
-      #echo "Checking if ${linkextentionarray[$x]} is equal to ${Extention}"
+    for x in "${ArrayIndexes[@]}"; do
+      echo "Checking if ${linkextentionarray[${x}]} is equal to ${Extention}"
 
       # check if corrisponding linkextentionarray matches given Exention. if true set AlreadySet.
-      if [[ "${linkextentionarray[$x]}" == "${Extention}" ]]; then
-        #echo "${linkextentionarray[$x]} is equal to ${Extention} not adding"
+      if [[ ${linkextentionarray[${x}]} == ${Extention} ]]; then
+        echo "${linkextentionarray[${x}]} is equal to ${Extention} not adding"
         # Extention/node already mapped to Context/Cluster
         AlreadyAdded=1
+        break
+      else
+        echo "${linkextentionarray[${x}]} is not equal to ${Extention} adding"
       fi
     done
 
     # If AlreadyAdded is not 1. Add it.
-    if [[ "${AlreadyAdded}" == 0 ]]; then
-      #echo "Adding ${Extention} to $Context"
+    if [[ ${AlreadyAdded} == 0 ]]; then
+      echo "Adding ${Extention} to $Context"
       linkcontextarray+=("$Context")
       linkextentionarray+=("$Extention")
-      #echo "${linkcontextarray[@]} shoud now contain $Context"
-      #echo "${linkextentionarray[@]} should now contain $Extention"
-      #echo "Context: $Context Extention: $Extention index is " ${#linkcontextarray[@]}
+      echo "${linkcontextarray[@]} shoud now contain $Context"
+      echo "${linkextentionarray[@]} should now contain $Extention"
+      echo "Adding Context to Extention Context: " ${linkcontextarray[-1]} " Extention: " ${linkextentionarray[-1]} " at index: " ${#linkcontextarray[@]}
+    else
+      echo "Context Already added"
     fi
   fi
   }
@@ -75,7 +80,12 @@ local SourceExtention=$2
 local ConParams=$3
 local ConType=$4
 
-echo "Adding:${ConType} from Context:${SourceContext} extention:${SourceExtention} going to:${ConParams}"
+#echo "Adding:${ConType} from Context:${SourceContext} extention:${SourceExtention} going to:${ConParams}"
+
+if [[ "${ConParams}" == *"$"* ]]; then
+  echo ${ConParams} " contains a $ not adding"
+  return
+fi
 
 #Remove everthing except commas from ConParams
 local JustCommas="${ConParams//[^,]}"
@@ -147,17 +157,22 @@ for i in "${!linkcontextarray[@]}"; do
   fi
 done
 
-# For each index number in ArrayIndexes.
-# Check if corrisponding linkextentionarray matches given Exention. if true set AlreadySet.
-for i in "${ArrayIndexes[@]}"; do
-  #echo "Does ${linkextentionarray[${i}]} == ${Extention}"
-  if [[ ${linkextentionarray[${i}]} == ${Extention} ]]; then
-    # Return index of connection
-    #echo "yes ${linkextentionarray[${i}]} == ${Extention}"
-    # returning ${i}
-    echo ${i}
-  fi
-done
+# If ArrayIndexes is not empty.
+if [[ -n $ArrayIndexes ]]; then
+
+  # For each index number in ArrayIndexes.
+  # Check if corrisponding linkextentionarray matches given Exention. if true set AlreadySet.
+  for i in "${ArrayIndexes[@]}"; do
+    #echo "Does ${linkextentionarray[${i}]} == ${Extention}"
+    if [[ ${linkextentionarray[${i}]} == ${Extention} ]]; then
+      # Return index of connection
+      #echo "yes ${linkextentionarray[${i}]} == ${Extention}"
+      # returning ${i}
+      echo ${i}
+      break
+    fi
+  done
+fi
 }
 
 # For gotoif processing. Given source context & source extention & ConParams.
@@ -193,6 +208,7 @@ while read p; do
     # if this context name is not already in the contextarray then add it.
 		if [[ ! " ${contextarray[*]} " =~ " ${context} " ]]; then
 		contextarray+=("${context}")
+    echo ${context} " is a new context"
 		fi
 		;;
 
@@ -337,8 +353,8 @@ for i in "${!contextarray[@]}"; do
     # For each value in linkcontext array. Check if context name matches, if so add array index (to be the node name) and the exention (to be the node label).
     # The reason we are using the index as the node name is because node names must be uniqe accross all subgraphs.
     for x in "${!linkcontextarray[@]}"; do
-      if [[ "${linkcontextarray[$x]}" == "${contextarray[${i}]}" ]]; then
-        echo "${x} [label=\"${linkextentionarray[$x]}\"];" >> graph.dot
+      if [[ "${linkcontextarray[${x}]}" == "${contextarray[${i}]}" ]]; then
+        echo "${x} [label=\"${linkextentionarray[${x}]}\"];" >> graph.dot
       fi
     done
 
@@ -354,13 +370,13 @@ echo " " >> graph.dot
 # Create edges/connections for inner context connections first
 for i in "${!contextarray[@]}"; do
   for x in "${!ConSourceContext[@]}"; do
-    if [[ ${contextarray[${i}]} == ${ConSourceContext[$x]} ]] && [[ ${contextarray[${i}]} == ${ConDestContext[$x]} ]]; then
-      echo "Going 1 to connect context:${ConSourceContext[$x]} Exten:${ConSourceExtention[$x]} --> Context:${ConDestContext[$x]} Exten:${ConDestExtention[$x]}"
-      ConSource=$(get_index_of_connection ${ConSourceContext[$x]} ${ConSourceExtention[$x]})
-      echo "context: ${ConSourceContext[$x]} Exten: ${ConSourceExtention[$x]} came out to be index $ConSource "
-      ConDest=$(get_index_of_connection ${ConDestContext[$x]} ${ConDestExtention[$x]})
-      echo "Context: ${ConDestContext[$x]} Exten: ${ConDestExtention[$x]} and out to be index $ConDest "
-      echo ${ConSource} " --> " ${ConDest} ";" >> graph.dot
+    if [[ ${contextarray[${i}]} == ${ConSourceContext[${x}]} ]] && [[ ${contextarray[${i}]} == ${ConDestContext[${x}]} ]]; then
+      echo "Going 1 to connect context:${ConSourceContext[${x}]} Exten:${ConSourceExtention[${x}]} --> Context:${ConDestContext[${x}]} Exten:${ConDestExtention[${x}]}"
+      ConSource=$(get_index_of_connection ${ConSourceContext[${x}]} ${ConSourceExtention[${x}]})
+      echo "context: " ${ConSourceContext[${x}]} " Exten: " ${ConSourceExtention[${x}]} " came out to be index " $ConSource
+      ConDest=$(get_index_of_connection ${ConDestContext[${x}]} ${ConDestExtention[${x}]})
+      echo "Context: " ${ConDestContext[${x}]} " Exten: " ${ConDestExtention[${x}]} " and out to be index " $ConDest
+      echo ${ConSource} " -> " ${ConDest} ";" >> graph.dot
     fi
   done
 done
@@ -368,13 +384,22 @@ done
 # Create edges/connections for all other connections
 for i in "${!contextarray[@]}"; do
   for x in "${!ConSourceContext[@]}"; do
-    if [[ ${contextarray[${i}]} == ${ConSourceContext[$x]} ]] && [[ ${contextarray[${i}]}" != "${ConDestContext[$x]} ]]; then
-      echo "Going 2 to connect context:${ConSourceContext[$x]} Exten:${ConSourceExtention[$x]} --> Context:${ConDestContext[$x]} Exten:${ConDestExtention[$x]}"
-      ConSource=$(get_index_of_connection ${ConSourceContext[$x]} ${ConSourceExtention[$x]})
-      echo "context: ${ConSourceContext[$x]} Exten: ${ConSourceExtention[$x]} came out to be index ${ConSource} "
-      ConDest=$(get_index_of_connection ${ConDestContext[$x]} ${ConDestExtention[$x]})
-      echo "Context: ${ConDestContext[$x]} Exten: ${ConDestExtention[$x]} and out to be index ${ConDest} "
-      echo ${ConSource} " --> " ${ConDest} ";" >> graph.dot
+    if [[ ${contextarray[${i}]} == ${ConSourceContext[${x}]} ]] && [[ ${contextarray[${i}]} != ${ConDestContext[${x}]} ]]; then
+      echo "Going 2 to connect context:${ConSourceContext[${x}]} Exten:${ConSourceExtention[${x}]} --> Context:${ConDestContext[${x}]} Exten:${ConDestExtention[${x}]}"
+      ConSource=$(get_index_of_connection ${ConSourceContext[${x}]} ${ConSourceExtention[${x}]})
+      echo "context: " ${ConSourceContext[${x}]} " Exten: " ${ConSourceExtention[${x}]} " came out to be index " ${ConSource}
+      ConDest=$(get_index_of_connection ${ConDestContext[${x}]} ${ConDestExtention[${x}]})
+      echo "Context: " ${ConDestContext[${x}]} " Exten: " ${ConDestExtention[${x}]} " and out to be index " ${ConDest}
+
+      if [[ -n $ConDest ]] && [[ -n $ConSource ]]; then
+        echo ${ConSource} " -> " ${ConDest} ";" >> graph.dot
+      else
+        if [[ -z $ConDest ]]; then
+          echo "Could not find index for $ConDest"
+          echo "or"
+          echo "Could not find index for $ConSource"
+        fi
+      fi
     fi
   done
 done
