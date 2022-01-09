@@ -201,6 +201,9 @@ while read p; do
 	# If the first char is a open bracket, this must be a context declaration.
 	\[)
     echo "[ processing for $p"
+    if [[ ${InCommentBlock} = 1 ]]; then
+      ;;
+    fi
     # cut off the brackets and put the context name in var context
 		context=`echo $p | sed 's/\[//g' | sed 's/\]//g'`
     echo "We are now in ${context}"
@@ -215,6 +218,10 @@ while read p; do
   # If the first charactor is an "e" this must be the start of a extention declaration
 	e)
     echo "e processing for $p"
+    if [[ ${InCommentBlock} = 1 ]]; then
+      ;;
+    fi
+
     # Set var exten to the exention.
     # cut off "exten" and "=>" | cut off everything after the first ","
 		exten=`echo $p | cut -d " " -f 3 | cut -d "," -f 1`
@@ -266,6 +273,9 @@ while read p; do
   # If the first charactor is an "s" we must be already in a extention
 	s)
   echo "s processing for $p"
+  if [[ ${InCommentBlock} = 1 ]]; then
+    ;;
+  fi
   # Check if line contains ",Goto("
   if  [[ "$p" == *",Goto("* ]]; then
     echo "Goto processing for $p"
@@ -360,7 +370,6 @@ for i in "${!contextarray[@]}"; do
 
     # End of subgraph
     echo '}' >> graph.dot
-    echo " " >> graph.dot
   fi
 
 # End of all subgraphs
@@ -371,12 +380,16 @@ echo " " >> graph.dot
 for i in "${!contextarray[@]}"; do
   for x in "${!ConSourceContext[@]}"; do
     if [[ ${contextarray[${i}]} == ${ConSourceContext[${x}]} ]] && [[ ${contextarray[${i}]} == ${ConDestContext[${x}]} ]]; then
-      echo "Going 1 to connect context:${ConSourceContext[${x}]} Exten:${ConSourceExtention[${x}]} --> Context:${ConDestContext[${x}]} Exten:${ConDestExtention[${x}]}"
+      #echo "Going 1 to connect context:${ConSourceContext[${x}]} Exten:${ConSourceExtention[${x}]} --> Context:${ConDestContext[${x}]} Exten:${ConDestExtention[${x}]}"
       ConSource=$(get_index_of_connection ${ConSourceContext[${x}]} ${ConSourceExtention[${x}]})
-      echo "context: " ${ConSourceContext[${x}]} " Exten: " ${ConSourceExtention[${x}]} " came out to be index " $ConSource
+      #echo "context: " ${ConSourceContext[${x}]} " Exten: " ${ConSourceExtention[${x}]} " came out to be index " $ConSource
       ConDest=$(get_index_of_connection ${ConDestContext[${x}]} ${ConDestExtention[${x}]})
-      echo "Context: " ${ConDestContext[${x}]} " Exten: " ${ConDestExtention[${x}]} " and out to be index " $ConDest
-      echo ${ConSource} " -> " ${ConDest} ";" >> graph.dot
+      #echo "Context: " ${ConDestContext[${x}]} " Exten: " ${ConDestExtention[${x}]} " and out to be index " $ConDest
+      if [[ -n $ConDest ]] && [[ -n $ConSource ]]; then
+        echo ${ConSource} " -> " ${ConDest} ";" >> graph.dot
+      else
+            echo "Could not find index for one of " $ConDest " OR " $ConSource
+      fi
     fi
   done
 done
@@ -385,20 +398,16 @@ done
 for i in "${!contextarray[@]}"; do
   for x in "${!ConSourceContext[@]}"; do
     if [[ ${contextarray[${i}]} == ${ConSourceContext[${x}]} ]] && [[ ${contextarray[${i}]} != ${ConDestContext[${x}]} ]]; then
-      echo "Going 2 to connect context:${ConSourceContext[${x}]} Exten:${ConSourceExtention[${x}]} --> Context:${ConDestContext[${x}]} Exten:${ConDestExtention[${x}]}"
+      #echo "Going 2 to connect context:${ConSourceContext[${x}]} Exten:${ConSourceExtention[${x}]} --> Context:${ConDestContext[${x}]} Exten:${ConDestExtention[${x}]}"
       ConSource=$(get_index_of_connection ${ConSourceContext[${x}]} ${ConSourceExtention[${x}]})
-      echo "context: " ${ConSourceContext[${x}]} " Exten: " ${ConSourceExtention[${x}]} " came out to be index " ${ConSource}
+      #echo "context: " ${ConSourceContext[${x}]} " Exten: " ${ConSourceExtention[${x}]} " came out to be index " ${ConSource}
       ConDest=$(get_index_of_connection ${ConDestContext[${x}]} ${ConDestExtention[${x}]})
-      echo "Context: " ${ConDestContext[${x}]} " Exten: " ${ConDestExtention[${x}]} " and out to be index " ${ConDest}
+      #echo "Context: " ${ConDestContext[${x}]} " Exten: " ${ConDestExtention[${x}]} " and out to be index " ${ConDest}
 
       if [[ -n $ConDest ]] && [[ -n $ConSource ]]; then
         echo ${ConSource} " -> " ${ConDest} ";" >> graph.dot
       else
-        if [[ -z $ConDest ]]; then
-          echo "Could not find index for $ConDest"
-          echo "or"
-          echo "Could not find index for $ConSource"
-        fi
+          echo "Could not find index for " $ConDest " OR " $ConSource
       fi
     fi
   done
