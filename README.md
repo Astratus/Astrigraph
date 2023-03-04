@@ -1,7 +1,7 @@
 ## Astrigraph
 
-Astrigraph is bash script that can take a asterisk dialplan and turn it into a graphviz graph. 
-Asterisk dialplan - https://wiki.asterisk.org/wiki/display/AST/Contexts%2C+Extensions%2C+and+Priorities
+Astrigraph is bash script that can take a asterisk dialplan and turn it into a graphviz graph \
+Asterisk dialplan - https://wiki.asterisk.org/wiki/display/AST/Contexts%2C+Extensions%2C+and+Priorities \
 Graphviz package - https://pkgs.org/download/graphviz
 
 ## My reasons for building this are
